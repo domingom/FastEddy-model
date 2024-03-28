@@ -332,7 +332,7 @@ extern "C" int cuda_hydroCoreDeviceBuildFrhs(float simTime, int simTime_it, int 
    cudaDevice_hydroCoreUnitTestCommenceRhoInvPresPert<<<grid, tBlock>>>(hydroFlds_d, hydroRhoInv_d, 
                                                           hydroBaseStateFlds_d, 
                                                           hydroPres_d, hydroBaseStatePres_d,
-                                                          moistScalars_d);
+                                                          moistScalars_d, zPos_d);
    gpuErrchk( cudaGetLastError() );
    gpuErrchk( cudaDeviceSynchronize() );
 #ifdef TIMERS_LEVEL2
@@ -558,7 +558,7 @@ __global__ void cudaDevice_hydroCoreUnitTestCommence(int simTime_it, float* hydr
 __global__ void cudaDevice_hydroCoreUnitTestCommenceRhoInvPresPert(float* hydroFlds_d, float* hydroRhoInv_d, 
                                                      float * hydroBaseStateFlds_d, 
                                                      float* hydroPres_d, float* hydroBaseStatePres_d,
-                                                     float* moistScalars_d){
+                                                     float* moistScalars_d, float* zPos_d){
    int i,j,k,ijk; 
    int iStride,jStride,kStride;
    int fldStride;
@@ -581,10 +581,10 @@ __global__ void cudaDevice_hydroCoreUnitTestCommenceRhoInvPresPert(float* hydroF
    } //end if in the range of cells in the field (halo-inclusive)
    if ((moistureSelector_d > 0)&&(moistureNvars_d > 0)){ // moist pressure calculation
      cudaDevice_calcPerturbationPressureMoist(&hydroPres_d[0], &hydroFlds_d[fldStride*RHO_INDX], &hydroFlds_d[fldStride*THETA_INDX],
-                                              &hydroBaseStateFlds_d[fldStride*THETA_INDX_BS], &moistScalars_d[0]); // qv
+                                              &hydroBaseStateFlds_d[fldStride*THETA_INDX_BS], &moistScalars_d[0], zPos_d); // qv
    }else{ // dry pressure calculation
      cudaDevice_calcPerturbationPressure(&hydroPres_d[0], &hydroFlds_d[fldStride*THETA_INDX],
-                                         &hydroBaseStateFlds_d[fldStride*THETA_INDX_BS]);
+                                         &hydroBaseStateFlds_d[fldStride*THETA_INDX_BS], zPos_d);
    }
 } // end cudaDevice_hydroCoreUnitTestCommenceRhoInvPresPert()
 
