@@ -120,7 +120,7 @@ __global__ void cudaDevice_hydroCoreUnitTestCommence(int simTime_it, float* hydr
 __global__ void cudaDevice_hydroCoreUnitTestCommenceRhoInvPresPert(float* hydroFlds_d, float* hydroRhoInv_d,
                                                      float* hydroBaseStateFlds_d,
                                                      float* hydroPres_d, float* hydroBaseStatePres_d,
-                                                     float* moistScalars_d); 
+                                                     float* moistScalars_d, float* zPos_d); 
 __global__ void cudaDevice_hydroCoreCalcFaceVelocities(float simTime, int simTime_it, int simTime_itRestart,
                                                        float dt, int timeStage, int numRKstages,
                                                        float* hydroFlds_d, float* hydroFldsFrhs_d,
