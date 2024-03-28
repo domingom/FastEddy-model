@@ -330,7 +330,7 @@ int hydro_coreGetParams(){
      errorCode = queryFloatParameter("moistureAdvSelectorQv_b", &moistureAdvSelectorQv_b, 0.0, 1.0, PARAM_MANDATORY);
      errorCode = queryIntegerParameter("moistureAdvSelectorQi", &moistureAdvSelectorQi, 0, 2, PARAM_MANDATORY);
      errorCode = queryIntegerParameter("moistureSGSturb", &moistureSGSturb, 0, 1, PARAM_MANDATORY);
-     errorCode = queryIntegerParameter("moistureCond", &moistureCond, 1, 3, PARAM_MANDATORY);
+     errorCode = queryIntegerParameter("moistureCond", &moistureCond, 1, 4, PARAM_MANDATORY);
      errorCode = queryFloatParameter("moistureCondTscale", &moistureCondTscale, 1e-4, 1000.0, PARAM_MANDATORY);
      errorCode = queryIntegerParameter("moistureCondBasePres", &moistureCondBasePres, 0, 1, PARAM_MANDATORY);
      errorCode = queryFloatParameter("moistureMPcallTscale", &moistureMPcallTscale, 1e-4, 1000.0, PARAM_MANDATORY);
