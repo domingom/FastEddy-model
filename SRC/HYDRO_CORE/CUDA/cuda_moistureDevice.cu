@@ -38,21 +38,23 @@ extern "C" int cuda_moistureDeviceSetup(){
    int Nelems;
 
    cudaMemcpyToSymbol(moistureSelector_d, &moistureSelector, sizeof(int));
-   cudaMemcpyToSymbol(moistureNvars_d, &moistureNvars, sizeof(int));
-   cudaMemcpyToSymbol(moistureAdvSelectorQv_d, &moistureAdvSelectorQv, sizeof(int));
-   cudaMemcpyToSymbol(moistureAdvSelectorQv_b_d, &moistureAdvSelectorQv_b, sizeof(float));
-   cudaMemcpyToSymbol(moistureSGSturb_d, &moistureSGSturb, sizeof(int));
-   cudaMemcpyToSymbol(moistureCond_d, &moistureCond, sizeof(int));
-   cudaMemcpyToSymbol(moistureAdvSelectorQi_d, &moistureAdvSelectorQi, sizeof(int));
-   cudaMemcpyToSymbol(moistureCondTscale_d, &moistureCondTscale, sizeof(float));
-   cudaMemcpyToSymbol(moistureCondBasePres_d, &moistureCondBasePres, sizeof(int));
-   cudaMemcpyToSymbol(moistureMPcallTscale_d, &moistureMPcallTscale, sizeof(float));
+   if (moistureSelector > 0){
+     cudaMemcpyToSymbol(moistureNvars_d, &moistureNvars, sizeof(int));
+     cudaMemcpyToSymbol(moistureAdvSelectorQv_d, &moistureAdvSelectorQv, sizeof(int));
+     cudaMemcpyToSymbol(moistureAdvSelectorQv_b_d, &moistureAdvSelectorQv_b, sizeof(float));
+     cudaMemcpyToSymbol(moistureSGSturb_d, &moistureSGSturb, sizeof(int));
+     cudaMemcpyToSymbol(moistureCond_d, &moistureCond, sizeof(int));
+     cudaMemcpyToSymbol(moistureAdvSelectorQi_d, &moistureAdvSelectorQi, sizeof(int));
+     cudaMemcpyToSymbol(moistureCondTscale_d, &moistureCondTscale, sizeof(float));
+     cudaMemcpyToSymbol(moistureCondBasePres_d, &moistureCondBasePres, sizeof(int));
+     cudaMemcpyToSymbol(moistureMPcallTscale_d, &moistureMPcallTscale, sizeof(float));
 
-   Nelems = (Nxp+2*Nh)*(Nyp+2*Nh)*(Nzp+2*Nh);
-   fecuda_DeviceMalloc(Nelems*moistureNvars*sizeof(float), &moistScalars_d);
-   fecuda_DeviceMalloc(Nelems*moistureNvars*sizeof(float), &moistScalarsFrhs_d);
-   fecuda_DeviceMalloc(Nelems*moistureNvars*3*sizeof(float), &moistTauFlds_d);
-   fecuda_DeviceMalloc(Nelems*sizeof(float), &fcond_d);
+     Nelems = (Nxp+2*Nh)*(Nyp+2*Nh)*(Nzp+2*Nh);
+     fecuda_DeviceMalloc(Nelems*moistureNvars*sizeof(float), &moistScalars_d);
+     fecuda_DeviceMalloc(Nelems*moistureNvars*sizeof(float), &moistScalarsFrhs_d);
+     fecuda_DeviceMalloc(Nelems*moistureNvars*3*sizeof(float), &moistTauFlds_d);
+     fecuda_DeviceMalloc(Nelems*sizeof(float), &fcond_d);
+   }
 
    return(errorCode);
 } //end cuda_moitureDeviceSetup()

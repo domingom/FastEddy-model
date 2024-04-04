@@ -164,7 +164,7 @@ extern "C" int cuda_hydroCoreDeviceSetup(){
    }
 
    /* MOISTURE*/
-   if (moistureSelector > 0){ 
+   if (moistureSelector >= 0){ 
      errorCode = cuda_moistureDeviceSetup();
    }
 
@@ -411,8 +411,10 @@ extern "C" int cuda_hydroCoreDeviceBuildFrhs(float simTime, int simTime_it, int 
    printf("cuda_hydroCoreUnitTestComplete()  Kernel execution time (ms): %12.8f\n", elapsedTime);
 #endif
 
-   if (filterSelector > 0){ // explicit filter 
-     cudaDevice_hydroCoreUnitTestCompleteFilters<<<grid, tBlock>>>(hydroFlds_d,hydroFldsFrhs_d,dt);
+   if ((filterSelector > 0) && ((physics_oneRKonly==0) || (timeStage==numRKstages))){ // explicit filters
+     cudaDevice_hydroCoreUnitTestCompleteFilters<<<grid, tBlock>>>(hydroFlds_d,hydroFldsFrhs_d,dt,
+		                                                   moistScalars_d,moistScalarsFrhs_d,hydroPres_d,
+                                                                   hydroBaseStatePres_d,timeStage);
    }
 
 #ifdef TIMERS_LEVEL1
