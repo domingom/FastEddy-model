@@ -160,8 +160,12 @@ int moistureCondBasePres;  /* selector to use base pressure for microphysics */
 float moistureMPcallTscale;/* time scale for microphysics to be called */
 
 /*Filters parameters*/
-int filterSelector;      /* explicit filter selector: 0=off, 1=on */
-float filter_6th_coeff;  /* 6th-order filter factor: 0.0=off, 1.0=full */
+int filterSelector;               /* explicit filter selector: 0=off, 1=on */
+int filter_6thdiff_vert;          /* vertical 6th-order filter on w selector: 0=off, 1=on */
+float filter_6thdiff_vert_coeff;  /* vertical 6th-order filter factor: 0.0=off, 1.0=full */
+int filter_6thdiff_hori;          /* horizontal 6th-order filter on rho,theta,qv selector: 0=off, 1=on */
+float filter_6thdiff_hori_coeff;  /* horizontal 6th-order filter factor: 0.0=off, 1.0=full */
+int filter_divdamp;               /* divergence damping selector: 0=off, 1=on */
 
 /*--- Rayleigh Damping Layer ---*/
 int dampingLayerSelector;       // Rayleigh Damping Layer selector
@@ -343,10 +347,24 @@ int hydro_coreGetParams(){
        errorCode = queryFloatParameter("surflayer_ideal_qamp", &surflayer_ideal_qamp, 0, 1e+3, PARAM_MANDATORY);
      }
    }
-   filterSelector = 0; // Default to off 
+   filterSelector = 0; // Default to off
+   filter_6thdiff_vert = 0; // Default to off
+   filter_6thdiff_vert_coeff = 0.03; // Default to 0.03
+   filter_6thdiff_hori = 0; // Default to off
+   filter_6thdiff_hori_coeff = 0.03; // Default to 0.03
+   filter_divdamp = 0; // Default to off
    errorCode = queryIntegerParameter("filterSelector", &filterSelector, 0, 1, PARAM_MANDATORY);
-   filter_6th_coeff = 0.12; // Default to 0.12 
-   errorCode = queryFloatParameter("filter_6th_coeff", &filter_6th_coeff, 0.0, 1.0, PARAM_MANDATORY);
+   if (filterSelector == 1){
+     errorCode = queryIntegerParameter("filter_6thdiff_vert", &filter_6thdiff_vert, 0, 1, PARAM_OPTIONAL);
+     errorCode = queryIntegerParameter("filter_6thdiff_hori", &filter_6thdiff_hori, 0, 1, PARAM_OPTIONAL);
+     errorCode = queryIntegerParameter("filter_divdamp", &filter_divdamp, 0, 1, PARAM_OPTIONAL);
+     if (filter_6thdiff_vert == 1){
+       errorCode = queryFloatParameter("filter_6thdiff_vert_coeff", &filter_6thdiff_vert_coeff, 0.0, 1.0, PARAM_MANDATORY);
+     }
+     if (filter_6thdiff_hori == 1){
+       errorCode = queryFloatParameter("filter_6thdiff_hori_coeff", &filter_6thdiff_hori_coeff, 0.0, 1.0, PARAM_MANDATORY);
+     }
+   }
    dampingLayerSelector = 0; // Default to off 
    errorCode = queryIntegerParameter("dampingLayerSelector", &dampingLayerSelector, 0, 1, PARAM_MANDATORY);
    dampingLayerDepth = 100.0; //Default to 100.0 (meters)  
@@ -497,8 +515,12 @@ int hydro_coreInit(){
         printParameter("moistureMPcallTscale", "time scale for microphysics to be called (in seconds)");
       }
       printComment("----------: EXPLICIT FILTERS ---");
-      printParameter("filterSelector", "explicit filter selector: 0= off, 1= on");
-      printParameter("filter_6th_coeff", "6th-order filter factor: 0.0=off, 1.0=full");
+      printParameter("filterSelector", "explicit filter selector: 0=off, 1=on");
+      printParameter("filter_6thdiff_vert", "vertical 6th-order filter on w selector: 0=off, 1=on");
+      printParameter("filter_6thdiff_vert_coeff", "vertical 6th-order filter factor: 0.0=off, 1.0=full");
+      printParameter("filter_6thdiff_hori", "horizontal 6th-order filter on rho,theta,qv selector: 0=off, 1=on");
+      printParameter("filter_6thdiff_hori_coeff", "horizontal 6th-order filter factor: 0.0=off, 1.0=full");
+      printParameter("filter_divdamp", "divergence damping selector: 0=off, 1=on");
       printComment("----------: RAYLEIGH DAMPING LAYER ---"); 
       printParameter("dampingLayerSelector", "Rayleigh damping layer selector: 0= off, 1= on.");
       printParameter("dampingLayerDepth", "Rayleigh damping layer depth in meters");
@@ -598,7 +620,11 @@ int hydro_coreInit(){
      MPI_Bcast(&moistureMPcallTscale, 1, MPI_FLOAT, 0, MPI_COMM_WORLD);
    }
    MPI_Bcast(&filterSelector, 1, MPI_INT, 0, MPI_COMM_WORLD);
-   MPI_Bcast(&filter_6th_coeff, 1, MPI_FLOAT, 0, MPI_COMM_WORLD);
+   MPI_Bcast(&filter_6thdiff_vert, 1, MPI_INT, 0, MPI_COMM_WORLD);
+   MPI_Bcast(&filter_6thdiff_vert_coeff, 1, MPI_FLOAT, 0, MPI_COMM_WORLD);
+   MPI_Bcast(&filter_6thdiff_hori, 1, MPI_INT, 0, MPI_COMM_WORLD);
+   MPI_Bcast(&filter_6thdiff_hori_coeff, 1, MPI_FLOAT, 0, MPI_COMM_WORLD);
+   MPI_Bcast(&filter_divdamp, 1, MPI_INT, 0, MPI_COMM_WORLD);
    MPI_Bcast(&dampingLayerSelector, 1, MPI_INT, 0, MPI_COMM_WORLD); 
    MPI_Bcast(&dampingLayerDepth, 1, MPI_FLOAT, 0, MPI_COMM_WORLD); 
    MPI_Bcast(&stabilityScheme, 1, MPI_INT, 0, MPI_COMM_WORLD);

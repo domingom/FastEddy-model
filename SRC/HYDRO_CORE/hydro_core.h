@@ -154,8 +154,12 @@ extern float moistureCondTscale;  /* relaxation time in seconds */
 extern int moistureCondBasePres;  /* selector to use base pressure for microphysics */
 extern float moistureMPcallTscale;  /* time scale for microphysics to be called */
 /*---FILTERS*/
-extern int filterSelector;      /* explicit filter selector: 0=off, 1=on */
-extern float filter_6th_coeff;  /* 6th-order filter factor: 0.0=off, 1.0=full */
+extern int filterSelector;               /* explicit filter selector: 0=off, 1=on */
+extern int filter_6thdiff_vert;          /* vertical 6th-order filter on w selector: 0=off, 1=on */
+extern float filter_6thdiff_vert_coeff;  /* vertical 6th-order filter w factor: 0.0=off, 1.0=full */
+extern int filter_6thdiff_hori;          /* horizontal 6th-order filter on rho,theta,qv selector: 0=off, 1=on */
+extern float filter_6thdiff_hori_coeff;  /* horizontal 6th-order filter factor: 0.0=off, 1.0=full */
+extern int filter_divdamp;               /* divergence damping selector: 0=off, 1=on */
 /*---RAYLEIGH DAMPING LAYER*/
 extern int dampingLayerSelector;       // Rayleigh Damping Layer selector
 extern float dampingLayerDepth;       // Rayleigh Damping Layer Depth
