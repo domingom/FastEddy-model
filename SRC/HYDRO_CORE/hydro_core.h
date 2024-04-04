@@ -118,6 +118,16 @@ extern float surflayer_ideal_amp; /*maximum amplitude of the idealized sinusoida
 extern float surflayer_ideal_qts;  /*start time (seconds) for idealized sinusoidal surf. forcing of latent heat flux*/
 extern float surflayer_ideal_qte;  /*end time (seconds) for idealized sinusoidal surf. forcing of latent heat flux*/
 extern float surflayer_ideal_qamp; /*maximum amplitude of idealized sinusoidal surface forcing of latent heat flux*/
+/*OFFSHORE ROUGNESS PARAMETERS*/
+extern int surflayer_offshore;       /* offshore selector: 0=off, 1=on */
+extern int surflayer_offshore_opt;   /* offshore roughness parameterization: ==0 (Charnock), ==1 (Charnock with variable alpha), ==2 (Taylor & Yelland), ==3 (Donelan), ==4 (Drennan), ==5 (Porchetta) */
+extern int surflayer_offshore_dyn;     /* selector to use parameterized ocean parameters: 0=off, 1=on (default) */
+extern float surflayer_offshore_hs;    /* significant wave height */
+extern float surflayer_offshore_lp;    /* peak wavelength */
+extern float surflayer_offshore_cp;    /* wave phase speed */
+extern float surflayer_offshore_theta; /* wave/wind angle */
+extern int surflayer_offshore_visc;    /* viscous term on z0m: 0=off, 1=on (default) */
+extern float* sea_mask;              /* Base Address of memory containing sea mask 0,1 field */
 /*---LARGE SCALE FORCING*/ 
 extern int lsfSelector;         /* large-scale forcings selector: 0=off, 1=on */
 extern float lsf_w_surf;        /* lsf to w at the surface */
