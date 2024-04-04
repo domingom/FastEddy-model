@@ -130,7 +130,7 @@ __global__ void cudaDevice_hydroCoreCalcFaceVelocities(float simTime, int simTim
                                                        float* hydroTauFlds_d, 
                                                        float* cdFld_d, float* chFld_d, float* cqFld_d, float* fricVel_d,
                                                        float* htFlux_d, float* tskin_d, float* invOblen_d,
-                                                       float* z0m_d, float* z0t_d, float* qFlux_d, float* qskin_d,
+                                                       float* z0m_d, float* z0t_d, float* qFlux_d, float* qskin_d, float* sea_mask_d,
                                                        float* hydroRhoInv_d, float* hydroKappaM_d,
                                                        float* sgstkeScalars_d, float* sgstke_ls_d,
                                                        float* dedxi_d, float* moistScalars_d,
