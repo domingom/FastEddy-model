@@ -121,6 +121,9 @@ extern "C" int cuda_timeIntDeviceCommence(int it){
      gpuErrchk( cudaDeviceSynchronize() );
      /*Execute the timeMethod kernel of choice on the GPU*/
      if(timeMethod == 0){    /*******  Issue the  3rd-order Runge-Kutta WS2002 **************/
+       if(cellpertSelector==1 && simTime_it%cellpert_nts==0){ /***** Issue cell perturbation method here *****/
+         errorCode = cuda_hydroCoreDeviceBuildCPmethod(simTime_it); // call to buildCPmethod
+       }
        for(RKstage=0; RKstage < 3; RKstage++){
           /*Build the right hand side forcing*/
           errorCode = cuda_hydroCoreDeviceBuildFrhs(simTime,simTime_it,simTime_itRestart,dt,RKstage,numRKstages);

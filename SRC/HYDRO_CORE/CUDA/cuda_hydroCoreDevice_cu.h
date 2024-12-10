@@ -78,6 +78,9 @@ extern float *hydroRhoInv_d;   //storage for 1.0/rho
 /*EXPLICIT FILTERS */
 #include <cuda_filtersDevice_cu.h>
 
+/*---CELL PERTURBATION METHOD*/
+#include <cuda_cellpertDevice_cu.h>
+
 /*Switch for Last-RK stage physics */
 extern __constant__ int physics_oneRKonly_d; /* selector to apply physics RHS forcing only at the latest RK stage: 0= off, 1= on */
 
