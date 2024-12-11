@@ -28,6 +28,7 @@
 #include <fecuda_Device_cu.h>
 #include <cuda_gridDevice_cu.h>
 #include <cuda_hydroCoreDevice_cu.h>
+#include <curand.h>
 
 //INCLUDED SOURCE FILES
 #include "cuda_BaseStateDevice.cu"
@@ -46,6 +47,7 @@
 #include "cuda_largeScaleForcingsDevice.cu" 
 #include "cuda_moistureDevice.cu" 
 #include "cuda_filtersDevice.cu" 
+#include "cuda_cellpertDevice.cu"
 
 /*#################------------- CUDA_HYDRO_CORE module variable definitions ------------------#############*/
 /*Parameters*/

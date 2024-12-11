@@ -186,6 +186,17 @@ int filter_6thdiff_hori;          /* horizontal 6th-order filter on rho,theta,qv
 float filter_6thdiff_hori_coeff;  /* horizontal 6th-order filter factor: 0.0=off, 1.0=full */
 int filter_divdamp;               /* divergence damping selector: 0=off, 1=on */
 
+/*---Cell perturbation (CP) method---*/
+int cellpertSelector;     /*CP method selector: 0= off, 1= on */
+int cellpert_sw2b;        /* switch to do: 0= all four lateral boundaries, 1= only south & west boundaries, 2= only south boundary */
+float cellpert_amp;       /* maximum amplitude for the potential temperature perturbations */
+int cellpert_nts;         /* number of time steps after which perturbations are seeded */
+int cellpert_gppc;        /* number of grid points conforming the cell */
+int cellpert_ndbc;        /* number of cells normal to domain lateral boundaries */
+int cellpert_kbottom;     /* z-grid point where the perturbations start */
+int cellpert_ktop;        /* z-grid point where the perturbations end */
+int cellpert_ktop_prev[4];/* z-grid point where the perturbations end array previous time step */
+
 /*--- Rayleigh Damping Layer ---*/
 int dampingLayerSelector;       // Rayleigh Damping Layer selector
 float dampingLayerDepth;       // Rayleigh Damping Layer Depth
@@ -351,6 +362,30 @@ int hydro_coreGetParams(){
      errorCode = queryIntegerParameter("canopySkinOpt", &canopySkinOpt, 0, 1, PARAM_MANDATORY);
      errorCode = queryFloatParameter("canopy_cd", &canopy_cd, 0.0, 1e+2, PARAM_MANDATORY);
      errorCode = queryFloatParameter("canopy_lf", &canopy_lf, 0.0, 1e+2, PARAM_MANDATORY);
+   }
+   //
+   cellpertSelector = 0; // Default to off
+   errorCode = queryIntegerParameter("cellpertSelector", &cellpertSelector, 0, 1, PARAM_OPTIONAL);
+   cellpert_nts = 500; // Default to 500 time steps
+   errorCode = queryIntegerParameter("cellpert_nts", &cellpert_nts, 0, 1e+6, PARAM_OPTIONAL);
+   if (cellpertSelector > 0){
+     errorCode = queryIntegerParameter("cellpertSelector", &cellpertSelector, 0, 1, PARAM_MANDATORY);
+     cellpert_sw2b = 0; // Default to 0
+     errorCode = queryIntegerParameter("cellpert_sw2b", &cellpert_sw2b, 0, 3, PARAM_MANDATORY);
+     cellpert_amp = 0.5; // Default to 0.5 K
+     errorCode = queryFloatParameter("cellpert_amp", &cellpert_amp, 0.0, 20.0, PARAM_MANDATORY);
+     cellpert_gppc = 8; // Default to 8 grid points per cell
+     errorCode = queryIntegerParameter("cellpert_gppc", &cellpert_gppc, 0, 50, PARAM_MANDATORY);
+     cellpert_ndbc = 3; // Default to 3 cells
+     errorCode = queryIntegerParameter("cellpert_ndbc", &cellpert_ndbc, 0, 10, PARAM_MANDATORY);
+     cellpert_kbottom = 1; // Default to 1st grid point above surface
+     errorCode = queryIntegerParameter("cellpert_kbottom", &cellpert_kbottom, 1, 10, PARAM_MANDATORY);
+     cellpert_ktop = 20; // Default to 20th grid point above surface
+     errorCode = queryIntegerParameter("cellpert_ktop", &cellpert_ktop, 0, 200, PARAM_MANDATORY);
+     cellpert_ktop_prev[0] = cellpert_ktop; // use params in as previous cellpert_ktop value
+     cellpert_ktop_prev[1] = cellpert_ktop; // use params in as previous cellpert_ktop value
+     cellpert_ktop_prev[2] = cellpert_ktop; // use params in as previous cellpert_ktop value
+     cellpert_ktop_prev[3] = cellpert_ktop; // use params in as previous cellpert_ktop value
    }
    //
    lsfSelector = 0; // Default to off 
@@ -667,6 +702,18 @@ int hydro_coreInit(){
       printParameter("filter_6thdiff_hori", "horizontal 6th-order filter on rho,theta,qv selector: 0=off, 1=on");
       printParameter("filter_6thdiff_hori_coeff", "horizontal 6th-order filter factor: 0.0=off, 1.0=full");
       printParameter("filter_divdamp", "divergence damping selector: 0=off, 1=on");
+
+      printComment("----------: CELL PERTURBATION METHOD ---");
+      printParameter("cellpertSelector", "CP method selector: 0= off, 1= on");
+      if (cellpertSelector > 0){
+        printParameter("cellpert_sw2b", "switch to do: 0=all four lateral boundaries, 1= only south & west boundaries, 2= only south boundary");
+        printParameter("cellpert_amp", "maximum amplitude for the potential temperature perturbations");
+        printParameter("cellpert_nts", "number of time steps after which perturbations are seeded");
+        printParameter("cellpert_gppc", "number of grid points conforming the cell");
+        printParameter("cellpert_ndbc", "number of cells normal to domain lateral boundaries");
+        printParameter("cellpert_kbottom", "z-grid point where the perturbations start");
+        printParameter("cellpert_ktop", "z-grid point where the perturbations end");
+      }
       printComment("----------: RAYLEIGH DAMPING LAYER ---"); 
       printParameter("dampingLayerSelector", "Rayleigh damping layer selector: 0= off, 1= on.");
       printParameter("dampingLayerDepth", "Rayleigh damping layer depth in meters");
@@ -813,6 +860,16 @@ int hydro_coreInit(){
    MPI_Bcast(&filter_6thdiff_hori, 1, MPI_INT, 0, MPI_COMM_WORLD);
    MPI_Bcast(&filter_6thdiff_hori_coeff, 1, MPI_FLOAT, 0, MPI_COMM_WORLD);
    MPI_Bcast(&filter_divdamp, 1, MPI_INT, 0, MPI_COMM_WORLD);
+   MPI_Bcast(&cellpertSelector, 1, MPI_INT, 0, MPI_COMM_WORLD);
+   MPI_Bcast(&cellpert_nts, 1, MPI_INT, 0, MPI_COMM_WORLD);
+   if (cellpertSelector > 0){
+     MPI_Bcast(&cellpert_sw2b, 1, MPI_INT, 0, MPI_COMM_WORLD);
+     MPI_Bcast(&cellpert_amp, 1, MPI_FLOAT, 0, MPI_COMM_WORLD);
+     MPI_Bcast(&cellpert_gppc, 1, MPI_INT, 0, MPI_COMM_WORLD);
+     MPI_Bcast(&cellpert_ndbc, 1, MPI_INT, 0, MPI_COMM_WORLD);
+     MPI_Bcast(&cellpert_kbottom, 1, MPI_INT, 0, MPI_COMM_WORLD);
+     MPI_Bcast(&cellpert_ktop, 1, MPI_INT, 0, MPI_COMM_WORLD);
+   }
    MPI_Bcast(&dampingLayerSelector, 1, MPI_INT, 0, MPI_COMM_WORLD); 
    MPI_Bcast(&dampingLayerDepth, 1, MPI_FLOAT, 0, MPI_COMM_WORLD); 
    MPI_Bcast(&NhydroAuxScalars, 1, MPI_INT, 0, MPI_COMM_WORLD);

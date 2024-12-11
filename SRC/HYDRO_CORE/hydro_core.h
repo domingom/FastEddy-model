@@ -177,6 +177,16 @@ extern float filter_6thdiff_vert_coeff;  /* vertical 6th-order filter w factor: 
 extern int filter_6thdiff_hori;          /* horizontal 6th-order filter on rho,theta,qv selector: 0=off, 1=on */
 extern float filter_6thdiff_hori_coeff;  /* horizontal 6th-order filter factor: 0.0=off, 1.0=full */
 extern int filter_divdamp;               /* divergence damping selector: 0=off, 1=on */
+/*---CELL PERTURBATION METHOD*/
+extern int cellpertSelector;     /* CP method selector: 0= off, 1= on */
+extern int cellpert_sw2b;        /* switch to do: 0= all four lateral boundaries, 1= only south & west boundaries, 2= only south boundary */
+extern float cellpert_amp;       /* maximum amplitude for the potential temperature perturbations */
+extern int cellpert_nts;         /* number of time steps after which perturbations are seeded */
+extern int cellpert_gppc;        /* number of grid points conforming the cell */
+extern int cellpert_ndbc;        /* number of cells normal to domain lateral boundaries */
+extern int cellpert_kbottom;     /* z-grid point where the perturbations start */
+extern int cellpert_ktop;        /* z-grid point where the perturbations end */
+extern int cellpert_ktop_prev[4];/* z-grid point where the perturbations end array previous time step */
 /*---RAYLEIGH DAMPING LAYER*/
 extern int dampingLayerSelector;       // Rayleigh Damping Layer selector
 extern float dampingLayerDepth;       // Rayleigh Damping Layer Depth
