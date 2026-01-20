@@ -187,30 +187,9 @@ extern "C" int cuda_hydroCoreDeviceSetup(){
    /*BASESTATE*/
    errorCode = cuda_BaseStateDeviceSetup();
 
-   /*SGSTURB*/
-   if(turbulenceSelector > 0){
-     errorCode = cuda_sgsTurbDeviceSetup();
-     /* SGSTKE */
-     if (TKESelector > 0) { 
-       errorCode = cuda_sgstkeDeviceSetup();
-     } // end if TKESelector > 0
-   }//end if turbulenceSelector > 0
-
-   if (diffusionSelector > 0) { 
-     errorCode = cuda_molecularDiffDeviceSetup();
-   }
-   if (surflayerSelector > 0) { 
-       errorCode = cuda_surfaceLayerDeviceSetup();
-   }
-
    /* CELL PERTURBATION METHOD */
    if (cellpertSelector > 0) { 
       errorCode = cuda_cellpertDeviceSetup();
-   }
-
-   /* CANOPY */
-   if (canopySelector > 0){
-     errorCode = cuda_canopyDeviceSetup();
    }
 
    /* LARGE SCALE FORCINGS*/
@@ -462,7 +441,12 @@ extern "C" int cuda_hydroCoreDeviceBuildFrhs(float simTime, int simTime_it, int 
                                                             invOblen_d, z0m_d, z0t_d, qFlux_d, qskin_d, sea_mask_d,
                                                             hydroRhoInv_d, hydroKappaM_d, sgstkeScalars_d, sgstke_ls_d,
                                                             dedxi_d, moistScalars_d, moistTauFlds_d, moistScalarsFrhs_d,
+#ifdef URBAN_EXT
+                                                            J13_d, J23_d, J31_d, J32_d, J33_d, D_Jac_d, building_mask_d);
+#else
                                                             J13_d, J23_d, J31_d, J32_d, J33_d, D_Jac_d);
+#endif //URBAN_EXT
+
 #ifdef TIMERS_LEVEL2
    stopSynchReportDestroyEvent(&startE, &stopE, &elapsedTime);
    printf("cuda_hydroCoreCalcFaceVelocities()  Kernel execution time (ms): %12.8f\n", elapsedTime);
@@ -1120,7 +1104,6 @@ __global__ void cudaDevice_hydroCoreComplete(float simTime, int simTime_it, floa
    }  //end if turbulenceSelector_d > 0
 
 } // end cudaDevice_hydroCoreComplete()
-
 __global__ void cudaDevice_hydroCoreCalcFaceVelocities(float simTime, int simTime_it, int simTime_itRestart, 
                                                        float dt,int timeStage, int numRKstages,
                                                        float* hydroFlds_d, float* hydroFldsFrhs_d,
@@ -1133,7 +1116,12 @@ __global__ void cudaDevice_hydroCoreCalcFaceVelocities(float simTime, int simTim
                                                        float* hydroRhoInv_d, float* hydroKappaM_d, float* sgstkeScalars_d, float* sgstke_ls_d,
                                                        float* dedxi_d, float* moistScalars_d, float* moistTauFlds_d,
                                                        float* moistScalarsFrhs_d,
+#ifdef URBAN_EXT
+                                                       float* J13_d, float* J23_d, float* J31_d, float* J32_d, float* J33_d, float* D_Jac_d, float* bldg_mask_d){
+#else
                                                        float* J13_d, float* J23_d, float* J31_d, float* J32_d, float* J33_d, float* D_Jac_d){
+#endif //URBAN_EXT
+
    int fldStride;
    float inv_pr; 
    int iFld; 
@@ -1164,7 +1152,31 @@ __global__ void cudaDevice_hydroCoreCalcFaceVelocities(float simTime, int simTim
 
    //### PRESSURE GRADIENT FORCE ###//
    if(pgfSelector_d > 0){
-
+#ifdef URBAN_EXT
+     if(urbanSelector_d > 0){
+       if((moistureSelector_d > 0)&&(moistureNvars_d > 0)){ // moist pressure gradient force
+         cudaDevice_calcPressureGradientForceMoistMasked(&hydroFldsFrhs_d[fldStride*U_INDX], &hydroFldsFrhs_d[fldStride*V_INDX],
+                                                   &hydroFldsFrhs_d[fldStride*W_INDX], &hydroFlds_d[fldStride*RHO_INDX], &hydroPres_d[0],
+                                                   &moistScalars_d[0],
+                                                   J13_d, J23_d, J31_d, J32_d, J33_d, bldg_mask_d);
+       }else{ // dry pressure gradient force
+         cudaDevice_calcPressureGradientForceMasked(&hydroFldsFrhs_d[fldStride*U_INDX], &hydroFldsFrhs_d[fldStride*V_INDX],
+                                              &hydroFldsFrhs_d[fldStride*W_INDX], &hydroPres_d[0],
+                                              J13_d, J23_d, J31_d, J32_d, J33_d, bldg_mask_d);
+       } // end if (moistureSelector_d > 0)&&(moistureNvars_d > 0)
+     }else{   //urbanSelector_d <= 0  so invoke non-Masked PGF
+       if((moistureSelector_d > 0)&&(moistureNvars_d > 0)){ // moist pressure gradient force
+         cudaDevice_calcPressureGradientForceMoist(&hydroFldsFrhs_d[fldStride*U_INDX], &hydroFldsFrhs_d[fldStride*V_INDX],
+                                                   &hydroFldsFrhs_d[fldStride*W_INDX], &hydroFlds_d[fldStride*RHO_INDX], &hydroPres_d[0],
+                                                   &moistScalars_d[0],
+                                                   J13_d, J23_d, J31_d, J32_d, J33_d);
+       }else{ // dry pressure gradient force
+         cudaDevice_calcPressureGradientForce(&hydroFldsFrhs_d[fldStride*U_INDX], &hydroFldsFrhs_d[fldStride*V_INDX],
+                                              &hydroFldsFrhs_d[fldStride*W_INDX], &hydroPres_d[0],
+                                              J13_d, J23_d, J31_d, J32_d, J33_d);
+       } // end if (moistureSelector_d > 0)&&(moistureNvars_d > 0)
+     }//if urbanSelector_d > 0
+#else //URBAN_EXT undefined so invoke non-Masked PGF
      if((moistureSelector_d > 0)&&(moistureNvars_d > 0)){ // moist pressure gradient force
        cudaDevice_calcPressureGradientForceMoist(&hydroFldsFrhs_d[fldStride*U_INDX], &hydroFldsFrhs_d[fldStride*V_INDX],
                                                  &hydroFldsFrhs_d[fldStride*W_INDX], &hydroFlds_d[fldStride*RHO_INDX], &hydroPres_d[0],
@@ -1175,6 +1187,7 @@ __global__ void cudaDevice_hydroCoreCalcFaceVelocities(float simTime, int simTim
                                             &hydroFldsFrhs_d[fldStride*W_INDX], &hydroPres_d[0],
                                             J13_d, J23_d, J31_d, J32_d, J33_d);
      } // end if (moistureSelector_d > 0)&&(moistureNvars_d > 0)
+#endif //URBAN_EXT
    } //end if pgfSelector_d > 0
 
    //### TURBULENCE ###//

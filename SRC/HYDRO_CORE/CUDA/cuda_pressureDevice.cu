@@ -230,3 +230,98 @@ __device__ void cudaDevice_calcPressureGradientForceMoist(float* Frhs_u, float* 
                                               +dZi_d*J33_d[ijk]*(pres[ijkp1] - pres[ijkm1]) );
   }//end if in the range of non-halo cells 
 } // end cudaDevice_calcPressureGradientForceMoist()
+
+#ifdef URBAN_EXT
+/*----->>>>> __device__ void  cudaDevice_calcPressureGradientForceMasked();  ---------------------------------------------
+* This is the cuda version of the calcPressureGradientForce routine from the HYDRO_CORE module
+*/
+__device__ void cudaDevice_calcPressureGradientForceMasked(float* Frhs_u, float* Frhs_v, float* Frhs_w, float* pres,
+                                                     float* J13_d, float* J23_d, float* J31_d, float* J32_d, float* J33_d, float* bdg_mask){
+  int i,j,k,ijk,iStride,jStride,kStride;
+  int ip1jk,im1jk,ijp1k,ijm1k,ijkp1,ijkm1;
+
+  i = (blockIdx.x)*blockDim.x + threadIdx.x;
+  j = (blockIdx.y)*blockDim.y + threadIdx.y;
+  k = (blockIdx.z)*blockDim.z + threadIdx.z;
+
+  if((i >= iMin_d)&&(i < iMax_d) && 
+     (j >= jMin_d)&&(j < jMax_d) && 
+     (k >= kMin_d)&&(k < kMax_d)){
+   
+    iStride = (Ny_d+2*Nh_d)*(Nz_d+2*Nh_d);
+    jStride = (Nz_d+2*Nh_d);
+    kStride = 1;
+
+    ijk = i*iStride + j*jStride + k*kStride;
+    ip1jk = (i+1)*iStride + j*jStride + k*kStride;
+    ijp1k = i*iStride + (j+1)*jStride + k*kStride;
+    ijkp1 = i*iStride + j*jStride + (k+1)*kStride;
+    im1jk = (i-1)*iStride + j*jStride + k*kStride;
+    ijm1k = i*iStride + (j-1)*jStride + k*kStride;
+    ijkm1 = i*iStride + j*jStride + (k-1)*kStride;
+
+    Frhs_u[ijk] = Frhs_u[ijk]-0.5*( dXi_d*(pres[ip1jk] - pres[im1jk])
+		                   +dZi_d*J13_d[ijk]*(pres[ijkp1] - pres[ijkm1]) );
+    Frhs_v[ijk] = Frhs_v[ijk]-0.5*( dYi_d*(pres[ijp1k] - pres[ijm1k])
+		                   +dZi_d*J23_d[ijk]*(pres[ijkp1] - pres[ijkm1]) );
+    if(bdg_mask[ijk] < 1e-8){   //If this grid cell is not in-building
+      if(bdg_mask[ijkm1] < 1e-8){ //If the cell below this grid-cell is not in-building
+        Frhs_w[ijk] = Frhs_w[ijk]-0.5*( dXi_d*J31_d[ijk]*(pres[ip1jk] - pres[im1jk])
+                                       +dYi_d*J32_d[ijk]*(pres[ijp1k] - pres[ijm1k])
+                                       +dZi_d*J33_d[ijk]*(pres[ijkp1] - pres[ijkm1]) );
+      }
+    }
+  }//end if in the range of non-halo cells 
+} // end cudaDevice_calcPressureGradientForceMasked()
+
+/*----->>>>> __device__ void  cudaDevice_calcPressureGradientForceMoistMasked();  -----------------------------------------
+*/
+__device__ void cudaDevice_calcPressureGradientForceMoistMasked(float* Frhs_u, float* Frhs_v, float* Frhs_w, float* rho,
+                                                          float* pres, float* moistScalars,
+                                                          float* J13_d, float* J23_d, float* J31_d, float* J32_d, float* J33_d, float* bdg_mask){
+
+  int i,j,k,ijk,iStride,jStride,kStride,fldStride;
+  int ip1jk,im1jk,ijp1k,ijm1k,ijkp1,ijkm1;
+  float rhomd_ijk,rhodm_ijk;
+  int iFld;
+
+  i = (blockIdx.x)*blockDim.x + threadIdx.x;
+  j = (blockIdx.y)*blockDim.y + threadIdx.y;
+  k = (blockIdx.z)*blockDim.z + threadIdx.z;
+  iStride = (Ny_d+2*Nh_d)*(Nz_d+2*Nh_d);
+  jStride = (Nz_d+2*Nh_d);
+  kStride = 1;
+
+  fldStride = (Nx_d+2*Nh_d)*(Ny_d+2*Nh_d)*(Nz_d+2*Nh_d);
+  ijk = i*iStride + j*jStride + k*kStride;
+  ip1jk = (i+1)*iStride + j*jStride + k*kStride;
+  ijp1k = i*iStride + (j+1)*jStride + k*kStride;
+  ijkp1 = i*iStride + j*jStride + (k+1)*kStride;
+  im1jk = (i-1)*iStride + j*jStride + k*kStride;
+  ijm1k = i*iStride + (j-1)*jStride + k*kStride;
+  ijkm1 = i*iStride + j*jStride + (k-1)*kStride;
+
+  if((i >= iMin_d)&&(i < iMax_d) && 
+     (j >= jMin_d)&&(j < jMax_d) && 
+     (k >= kMin_d)&&(k < kMax_d)){
+
+    rhomd_ijk = 1.0;
+    for (iFld=0; iFld < moistureNvars_d; iFld++){
+       rhomd_ijk = rhomd_ijk + moistScalars[fldStride*iFld+ijk]/rho[ijk]*1e-3; // *1e-3 to convert from g/kg to kg/kg
+    }
+    rhodm_ijk = 1.0/rhomd_ijk;
+
+    Frhs_u[ijk] = Frhs_u[ijk] -rhodm_ijk*0.5*( dXi_d*(pres[ip1jk] - pres[im1jk])
+		                              +dZi_d*J13_d[ijk]*(pres[ijkp1] - pres[ijkm1]) );
+    Frhs_v[ijk] = Frhs_v[ijk] -rhodm_ijk*0.5*( dYi_d*(pres[ijp1k] - pres[ijm1k])
+		                              +dZi_d*J23_d[ijk]*(pres[ijkp1] - pres[ijkm1]) );
+    if(bdg_mask[ijk] < 1e-8){   //If this grid cell is not in-building
+      if(bdg_mask[ijkm1] < 1e-8){ //If the cell below this grid-cell is not in-building
+        Frhs_w[ijk] = Frhs_w[ijk] -rhodm_ijk*0.5*( dXi_d*J31_d[ijk]*(pres[ip1jk] - pres[im1jk])
+                                                  +dYi_d*J32_d[ijk]*(pres[ijp1k] - pres[ijm1k])
+                                                  +dZi_d*J33_d[ijk]*(pres[ijkp1] - pres[ijkm1]) );
+      }
+    }
+  }//end if in the range of non-halo cells 
+} // end cudaDevice_calcPressureGradientForceMoistMasked()
+#endif //URBAN_EXT

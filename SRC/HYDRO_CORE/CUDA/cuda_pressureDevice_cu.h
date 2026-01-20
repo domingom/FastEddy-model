@@ -48,4 +48,12 @@ __device__ void cudaDevice_calcPressureGradientForceMoist(float* Frhs_u, float* 
                                                           float* pres, float* moistScalars,
                                                           float* J13_d, float* J23_d, float* J31_d, float* J32_d, float* J33_d);
 
+#ifdef URBAN_EXT
+__device__ void cudaDevice_calcPressureGradientForceMasked(float* Frhs_u, float* Frhs_v, float* Frhs_w, float* pres,
+                                                     float* J13_d, float* J23_d, float* J31_d, float* J32_d, float* J33_d, float* bdg_mask);
+__device__ void cudaDevice_calcPressureGradientForceMoistMasked(float* Frhs_u, float* Frhs_v, float* Frhs_w, float* rho,
+                                                          float* pres, float* moistScalars,
+                                                          float* J13_d, float* J23_d, float* J31_d, float* J32_d, float* J33_d, float* bdg_mask);
+#endif //URBAN_EXT
+       
 #endif // _PRESSURE_CUDADEV_CU_H
